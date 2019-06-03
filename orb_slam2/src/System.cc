@@ -489,6 +489,20 @@ std::vector<MapPoint*> System::GetAllMapPoints() {
   return mpMap->GetAllMapPoints();
 }
 
+std::vector<MapPoint*> System::GetRecentMapPoints() {
+    mMutexState.lock();
+    std::vector<MapPoint*> v;
+    for (unsigned int i=0; i < mTrackedMapPoints.size(); i++) {
+        MapPoint* mp = mTrackedMapPoints.at(i);
+        if (mp != NULL)
+        {
+            v.push_back(mp);
+        }
+    }
+    mMutexState.unlock();
+    return v;
+}
+
 void System::ActivateLocalizationMode()
 {
     unique_lock<mutex> lock(mMutexMode);

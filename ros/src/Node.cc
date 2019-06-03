@@ -22,6 +22,7 @@ Node::Node (ORB_SLAM2::System* pSLAM, ros::NodeHandle &node_handle, image_transp
   rendered_image_publisher_ = image_transport.advertise (name_of_node_+"/debug_image", 1);
   if (publish_pointcloud_param_) {
     map_points_publisher_ = node_handle_.advertise<sensor_msgs::PointCloud2> (name_of_node_+"/map_points", 1);
+    recent_map_points_publisher_ = node_handle_.advertise<sensor_msgs::PointCloud2> (name_of_node_+"/recent_map_points", 1);
   }
 
   // Enable publishing camera's pose as PoseStamped message
@@ -50,15 +51,21 @@ void Node::Update () {
   PublishRenderedImage (orb_slam_->DrawCurrentFrame());
 
   if (publish_pointcloud_param_) {
-    PublishMapPoints (orb_slam_->GetAllMapPoints());
+    PublishAllMapPoints (orb_slam_->GetAllMapPoints());
+    PublishRecentMapPoints(orb_slam_->GetRecentMapPoints());
   }
 
 }
 
 
-void Node::PublishMapPoints (std::vector<ORB_SLAM2::MapPoint*> map_points) {
+void Node::PublishAllMapPoints (std::vector<ORB_SLAM2::MapPoint*> map_points) {
   sensor_msgs::PointCloud2 cloud = MapPointsToPointCloud (map_points);
   map_points_publisher_.publish (cloud);
+}
+
+void Node::PublishRecentMapPoints (std::vector<ORB_SLAM2::MapPoint*> map_points) {
+  sensor_msgs::PointCloud2 cloud = MapPointsToPointCloud (map_points);
+  recent_map_points_publisher_.publish (cloud);
 }
 
 

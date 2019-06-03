@@ -56,7 +56,8 @@ class Node
     ros::Time current_frame_time_;
 
   private:
-    void PublishMapPoints (std::vector<ORB_SLAM2::MapPoint*> map_points);
+    void PublishAllMapPoints (std::vector<ORB_SLAM2::MapPoint*> map_points);
+    void PublishRecentMapPoints (std::vector<ORB_SLAM2::MapPoint*> map_points);
     void PublishPositionAsTransform (cv::Mat position);
     void PublishPositionAsPoseStamped(cv::Mat position);
     void PublishRenderedImage (cv::Mat image);
@@ -68,6 +69,7 @@ class Node
 
     image_transport::Publisher rendered_image_publisher_;
     ros::Publisher map_points_publisher_;
+    ros::Publisher recent_map_points_publisher_;
     ros::Publisher pose_publisher_;
 
     std::string name_of_node_;
