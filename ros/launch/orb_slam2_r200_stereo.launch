@@ -3,7 +3,7 @@
       type="orb_slam2_ros_stereo" args="
           $(find orb_slam2_ros)/orb_slam2/Vocabulary/ORBvoc.txt
           $(find orb_slam2_ros)/orb_slam2/config/RealSenseR200Stereo.yaml"
-      output="screen">
+      output="screen" respawn="true">
        <remap from="image_left/image_color_rect" to="/md_rov/stereocam/left/image_raw" />
        <remap from="image_right/image_color_rect" to="/md_rov/stereocam/right/image_raw" />
 
