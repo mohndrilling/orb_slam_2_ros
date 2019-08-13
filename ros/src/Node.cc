@@ -41,7 +41,7 @@ void Node::Update () {
   cv::Mat position = orb_slam_->GetCurrentPosition();
 
   if (!position.empty()) {
-    PublishPositionAsTransform (position);
+    // PublishPositionAsTransform (position);
 
     if (publish_pose_param_) {
       PublishPositionAsPoseStamped (position);
@@ -59,12 +59,12 @@ void Node::Update () {
 
 
 void Node::PublishAllMapPoints (std::vector<ORB_SLAM2::MapPoint*> map_points) {
-  sensor_msgs::PointCloud2 cloud = MapPointsToPointCloud (map_points);
+  sensor_msgs::PointCloud2 cloud = MapPointsToPointCloud (map_points, false);
   map_points_publisher_.publish (cloud);
 }
 
 void Node::PublishRecentMapPoints (std::vector<ORB_SLAM2::MapPoint*> map_points) {
-  sensor_msgs::PointCloud2 cloud = MapPointsToPointCloud (map_points);
+  sensor_msgs::PointCloud2 cloud = MapPointsToPointCloud (map_points, true);
   recent_map_points_publisher_.publish (cloud);
 }
 
@@ -87,7 +87,7 @@ void Node::PublishPositionAsPoseStamped (cv::Mat position) {
 void Node::PublishRenderedImage (cv::Mat image) {
   std_msgs::Header header;
   header.stamp = current_frame_time_;
-  header.frame_id = map_frame_id_param_;
+  header.frame_id = camera_frame_id_param_;
   const sensor_msgs::ImagePtr rendered_image_msg = cv_bridge::CvImage(header, "bgr8", image).toImageMsg();
   rendered_image_publisher_.publish(rendered_image_msg);
 }
@@ -128,7 +128,7 @@ tf::Transform Node::TransformFromMat (cv::Mat position_mat) {
 }
 
 
-sensor_msgs::PointCloud2 Node::MapPointsToPointCloud (std::vector<ORB_SLAM2::MapPoint*> map_points) {
+sensor_msgs::PointCloud2 Node::MapPointsToPointCloud (std::vector<ORB_SLAM2::MapPoint*> map_points, bool body_frame) {
   if (map_points.size() == 0) {
     std::cout << "Map point vector is empty!" << std::endl;
   }
@@ -157,7 +157,10 @@ sensor_msgs::PointCloud2 Node::MapPointsToPointCloud (std::vector<ORB_SLAM2::Map
 
   cloud.data.resize(cloud.row_step * cloud.height);
 
-	unsigned char *cloud_data_ptr = &(cloud.data[0]);
+  unsigned char *cloud_data_ptr = &(cloud.data[0]);
+
+  tf::Transform grasp_tf = TransformFromMat (orb_slam_->GetCurrentPosition());
+  tf::Transform grasp_tf_inv = grasp_tf.inverse();
 
   float data_array[3];
   for (unsigned int i=0; i<cloud.width; i++) {
@@ -167,6 +170,9 @@ sensor_msgs::PointCloud2 Node::MapPointsToPointCloud (std::vector<ORB_SLAM2::Map
       data_array[2] = -1.0* map_points.at(i)->GetWorldPos().at<float> (1); //z. Do the transformation by just reading at the position of y instead of z
       //TODO dont hack the transformation but have a central conversion function for MapPointsToPointCloud and TransformFromMat
 
+      if (body_frame)
+          transformToBodyFrame(data_array, grasp_tf_inv);
+
       memcpy(cloud_data_ptr+(i*cloud.point_step), data_array, 3*sizeof(float));
     }
   }
@@ -174,6 +180,15 @@ sensor_msgs::PointCloud2 Node::MapPointsToPointCloud (std::vector<ORB_SLAM2::Map
   return cloud;
 }
 
+void Node::transformToBodyFrame(float *data_array, tf::Transform trafo)
+{
+    tf::Vector3 point_inertial(data_array[0], data_array[1], data_array[2]);
+    tf::Vector3 point_body = trafo * point_inertial;
+
+    data_array[0] = -1.0f * point_body.y();
+    data_array[1] = -1.0f * point_body.z();
+    data_array[2] = point_body.x();
+}
 
 void Node::ParamsChangedCallback(orb_slam2_ros::dynamic_reconfigureConfig &config, uint32_t level) {
   orb_slam_->EnableLocalizationOnly (config.localize_only);
