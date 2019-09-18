@@ -59,11 +59,13 @@ void Node::Update () {
 
 
 void Node::PublishAllMapPoints (std::vector<ORB_SLAM2::MapPoint*> map_points) {
+  if (!map_points.size()) return;
   sensor_msgs::PointCloud2 cloud = MapPointsToPointCloud (map_points, false);
   map_points_publisher_.publish (cloud);
 }
 
 void Node::PublishRecentMapPoints (std::vector<ORB_SLAM2::MapPoint*> map_points) {
+  if (!map_points.size()) return;
   sensor_msgs::PointCloud2 cloud = MapPointsToPointCloud (map_points, true);
   recent_map_points_publisher_.publish (cloud);
 }
@@ -129,9 +131,6 @@ tf::Transform Node::TransformFromMat (cv::Mat position_mat) {
 
 
 sensor_msgs::PointCloud2 Node::MapPointsToPointCloud (std::vector<ORB_SLAM2::MapPoint*> map_points, bool body_frame) {
-  if (map_points.size() == 0) {
-    std::cout << "Map point vector is empty!" << std::endl;
-  }
 
   sensor_msgs::PointCloud2 cloud;
 

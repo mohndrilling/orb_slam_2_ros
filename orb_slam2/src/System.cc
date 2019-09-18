@@ -486,21 +486,37 @@ cv::Mat System::DrawCurrentFrame () {
 }
 
 std::vector<MapPoint*> System::GetAllMapPoints() {
-  return mpMap->GetAllMapPoints();
+  unique_lock<mutex> lock(mMutexReset);
+  if(mbReset)
+  {
+      return std::vector<MapPoint*>(); //just an empty vector
+  }
+  else {
+      return mpMap->GetAllMapPoints();
+  }
 }
 
 std::vector<MapPoint*> System::GetRecentMapPoints() {
-    mMutexState.lock();
-    std::vector<MapPoint*> v;
-    for (unsigned int i=0; i < mTrackedMapPoints.size(); i++) {
-        MapPoint* mp = mTrackedMapPoints.at(i);
-        if (mp != NULL)
-        {
-            v.push_back(mp);
-        }
+    unique_lock<mutex> lock(mMutexReset);
+    if(mbReset)
+    {
+        return std::vector<MapPoint*>(); //just an empty vector
     }
-    mMutexState.unlock();
-    return v;
+    else
+    {
+        mMutexState.lock();
+        std::vector<MapPoint*> v;
+        for (unsigned int i=0; i < mTrackedMapPoints.size(); i++) {
+            MapPoint* mp = mTrackedMapPoints.at(i);
+            if (mp != NULL)
+            {
+                v.push_back(mp);
+            }
+        }
+        mMutexState.unlock();
+        return v;
+    }
+
 }
 
 void System::ActivateLocalizationMode()
